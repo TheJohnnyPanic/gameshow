@@ -453,7 +453,8 @@ async function fetchLibrary(){
 
     // Caddy browse JSON: { files: [{name, is_dir, size, modified}] }
     // Filter to CSV/XLSX only, exclude directories and README
-    const files = (data.files || [])
+
+    const files = (Array.isArray(data) ? data : (data.files || []))
       .filter(f => !f.is_dir && /\.(csv|xlsx|xls)$/i.test(f.name));
 
     if(!files.length){
