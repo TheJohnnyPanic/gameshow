@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Pop In Off — Jeopardy Board</title>
+<!-- Optional: enables .xlsx import. CSV import works without it (offline-safe). -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- ===================== SETUP ===================== -->
+<div id="setup">
+  <div class="setup-wrap">
+    <div class="brand">
+      <p>POP IN OFF · TUCSON</p>
+      <h1>Jeopardy Board</h1>
+    </div>
+
+    <div class="card">
+      <div class="field">
+        <label for="titleInput">Game title (shown on the board)</label>
+        <input type="text" id="titleInput" value="Pop In Off — Game Night">
+      </div>
+      <label class="toggle"><input type="checkbox" id="ddToggle" checked> Arm one random Daily Double each game</label>
+    </div>
+
+    <div class="card">
+      <h2>Load your questions</h2>
+      <p class="hint">
+        Build a spreadsheet with the columns <b>Category</b>, <b>Value</b>, <b>Clue</b>, <b>Answer</b> — one row per clue.
+        <b>Clue</b> is what shows on the board; <b>Answer</b> is the correct response (host-only). <b>Value</b> is optional
+        (left blank, clues auto-fill 200 &rarr; 1000 in row order). Export it as <b>CSV</b> for offline-safe loading, or use <b>.xlsx</b>.
+      </p>
+      <div class="row">
+        <button class="btn" id="csvBtn">Load CSV / XLSX file</button>
+        <button class="btn ghost" id="pasteBtn">Paste CSV instead</button>
+        <button class="btn ghost" id="sampleBtn">Load sample game</button>
+        <button class="btn ghost" id="templateBtn">Download CSV template</button>
+        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display:none">
+      </div>
+      <div id="pasteWrap" style="display:none;margin-top:12px;">
+        <textarea id="pasteArea" placeholder="Category,Value,Clue,Answer&#10;Science,200,This planet is the Red Planet,What is Mars?"></textarea>
+        <div class="row" style="margin-top:8px;">
+          <button class="btn" id="pasteLoadBtn">Load pasted data</button>
+        </div>
+      </div>
+      <div id="preview"></div>
+    </div>
+
+    <div class="start-row">
+      <button class="btn gold big" id="startBtn" disabled>Start game</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== GAME ===================== -->
+<div id="game">
+  <div id="topbar">
+    <div id="gameTitle">Pop In Off</div>
+    <div class="tools">
+      <button class="toolbtn" id="resetBtn" title="Clear all answered tiles and re-arm Daily Double">&#8635; Reset board</button>
+      <button class="toolbtn" id="backBtn" title="Return to setup">&#9881; Setup</button>
+    </div>
+  </div>
+  <div id="board"></div>
+</div>
+
+<!-- ===================== CLUE ZOOM ===================== -->
+<div id="clueLayer">
+  <div id="clueBackdrop"></div>
+  <div id="clueCard">
+    <div id="clueValue"></div>
+    <div id="clueCat"></div>
+    <div id="clueText"></div>
+    <div id="clueAnswer"></div>
+    <div id="clueControls">
+      <button class="btn" id="revealBtn">Reveal answer</button>
+      <button class="btn gold" id="doneBtn">Mark answered &amp; return</button>
+    </div>
+    <button id="clueClose" title="Close without marking answered (Esc)">&times;</button>
+    <div id="ddSplash">
+      <div class="dd-word">Daily<br>Double</div>
+      <div class="dd-sub" id="ddSub">Worth $400</div>
+      <button class="btn gold" id="ddRevealBtn" style="font-size:clamp(16px,2.6vh,24px);padding:14px 30px;">Reveal clue</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

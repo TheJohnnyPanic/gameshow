@@ -1,0 +1,13 @@
+# Audio binaries are downloaded locally per sounds/README.md.
+# Keeping them out of the repo keeps it lean and avoids stock-audio
+# redistribution terms (e.g. Mixkit) on a public GitHub repo.
+sounds/*.mp3
+sounds/*.wav
+sounds/*.ogg
+sounds/*.m4a
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
