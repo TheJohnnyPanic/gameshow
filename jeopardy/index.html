@@ -27,7 +27,19 @@
     </div>
 
     <div class="card">
-      <h2>Load your questions</h2>
+      <h2>Game library</h2>
+      <p class="hint">
+        Games preloaded on the server. Click one to load it. Drop more <code>.csv</code> / <code>.xlsx</code>
+        files into the server's <code>jeopardy/games/</code> folder, then hit Refresh.
+      </p>
+      <div id="serverGames" class="lib-list"><span class="lib-status">Checking server library&hellip;</span></div>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn ghost" id="refreshLibBtn">&#8635; Refresh library</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Or load a new game</h2>
       <p class="hint">
         Build a spreadsheet with the columns <b>Category</b>, <b>Value</b>, <b>Clue</b>, <b>Answer</b> — one row per clue.
         <b>Clue</b> is what shows on the board; <b>Answer</b> is the correct response (host-only). <b>Value</b> is optional
@@ -46,8 +58,9 @@
           <button class="btn" id="pasteLoadBtn">Load pasted data</button>
         </div>
       </div>
-      <div id="preview"></div>
     </div>
+
+    <div id="preview"></div>
 
     <div class="start-row">
       <button class="btn gold big" id="startBtn" disabled>Start game</button>

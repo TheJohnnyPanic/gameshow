@@ -47,10 +47,18 @@ One row per clue. Header row must include **Category**, **Clue**, and **Answer**
 jeopardy/
 ├── index.html      # markup
 ├── styles.css      # all styling (Jeopardy blue/gold theme)
-├── app.js          # board logic, CSV/XLSX import, zoom, Daily Double
+├── app.js          # board logic, CSV/XLSX import, zoom, Daily Double, game library
+├── games/          # preloaded CSV/XLSX games — see games/README.md
 ├── sounds/         # drop optional audio here — see sounds/README.md
 └── README.md
 ```
+
+## Game library (server)
+
+When hosted behind Caddy with `browse` enabled on `/jeopardy/games/*`, the setup screen shows
+a **Game library** box listing every `.csv`/`.xlsx` in `games/`. Click one to load it — no
+upload. The file name becomes the game title. See `games/README.md` for how to add games.
+Opened locally (no Caddy), the box just says "no library" and the upload options still work.
 
 ## Controls
 

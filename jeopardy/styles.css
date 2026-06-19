@@ -69,6 +69,19 @@ textarea{
 .pv-cat span{color:#9aa6e0;}
 .start-row{margin-top:26px;text-align:center;}
 
+/* server game library */
+.lib-list{display:flex;flex-direction:column;gap:8px;}
+.lib-status{color:#9aa6e0;font-size:13px;line-height:1.5;}
+.lib-status code{background:#02063b;padding:1px 5px;border-radius:4px;}
+.lib-item{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;
+  background:#02063b;border:1px solid rgba(120,140,255,.3);border-radius:9px;
+  padding:12px 14px;cursor:pointer;text-align:left;color:#fff;
+  transition:border-color .12s,filter .12s,transform .05s;}
+.lib-item:hover{border-color:var(--gold);filter:brightness(1.12);}
+.lib-item:active{transform:translateY(1px);}
+.lib-name{font-weight:600;font-size:14.5px;}
+.lib-meta{font-family:var(--cond);letter-spacing:.06em;font-size:11px;color:#9aa6e0;white-space:nowrap;}
+
 /* ---------- GAME SCREEN ---------- */
 #game{position:fixed;inset:0;display:none;flex-direction:column;background:#000;}
 #topbar{

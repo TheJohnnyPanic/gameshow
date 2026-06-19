@@ -11,6 +11,7 @@ gameshow/                     ← repo root = web root (served at /srv/gameshow)
 │   ├── index.html
 │   ├── styles.css
 │   ├── app.js
+│   ├── games/                ← preloaded CSV/XLSX games (shown in the "Game library" picker)
 │   ├── sounds/               ← optional audio (gitignored; see its README)
 │   └── README.md             ← game-specific docs
 ├── Caddyfile.example         ← the Caddy site block to add
@@ -66,8 +67,20 @@ Append the block from `Caddyfile.example` to `/etc/caddy/Caddyfile`:
 gameshow.thecultofbrighterdays.org {
     root * /srv/gameshow
     encode gzip zstd
-    file_server {
-        hide .git* Caddyfile.example *.md
+
+    # Game library: let the Jeopardy games folder return a JSON listing
+    handle /jeopardy/games/* {
+        file_server {
+            browse
+            hide *.md
+        }
+    }
+
+    # Everything else
+    handle {
+        file_server {
+            hide .git* Caddyfile.example *.md
+        }
     }
 }
 ```
@@ -75,7 +88,7 @@ gameshow.thecultofbrighterdays.org {
 Then validate and reload:
 
 ```bash
-sudo caddy validate --config /etc/caddy/Caddyfile
+sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 sudo systemctl reload caddy
 ```
 
@@ -85,6 +98,22 @@ Caddy fetches the Let's Encrypt cert automatically on the first request once DNS
 
 - `https://gameshow.thecultofbrighterdays.org/` → the hub
 - `https://gameshow.thecultofbrighterdays.org/jeopardy/` → the board
+- `https://gameshow.thecultofbrighterdays.org/jeopardy/games/` → a JSON file list (the
+  "Game library" picker reads this)
+
+### Game library (preloaded games)
+
+Files in `jeopardy/games/` show up in the Jeopardy setup screen under **Game library** —
+click to load, no upload. Add games either way:
+
+```bash
+# drop straight on the server (not tracked in git):
+scp "My Game.csv" johnnypanic@74.208.72.145:/srv/gameshow/jeopardy/games/
+ssh johnnypanic@74.208.72.145 'sudo chmod a+rX /srv/gameshow/jeopardy/games/*'
+```
+
+…or commit the file into `jeopardy/games/` and `git pull` on the VPS. Then hit **Refresh
+library** on the setup screen.
 
 ---
 
