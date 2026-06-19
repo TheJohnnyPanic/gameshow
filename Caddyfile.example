@@ -1,0 +1,17 @@
+# Add this block to /etc/caddy/Caddyfile (Caddy runs as systemd on the VPS).
+# Caddy will automatically obtain a Let's Encrypt certificate once
+# gameshow.thecultofbrighterdays.org resolves to this server and ports 80/443
+# are reachable (they already are — other sites are served the same way).
+
+gameshow.thecultofbrighterdays.org {
+    root * /srv/gameshow
+    encode gzip zstd
+    file_server {
+        # Keep repo/meta files out of the public web root
+        hide .git* Caddyfile.example *.md
+    }
+}
+
+# After editing the Caddyfile:
+#   sudo caddy validate --config /etc/caddy/Caddyfile
+#   sudo systemctl reload caddy

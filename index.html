@@ -2,95 +2,120 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Pop In Off — Jeopardy Board</title>
-<!-- Optional: enables .xlsx import. CSV import works without it (offline-safe). -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
-<link rel="stylesheet" href="styles.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Cult of Brighter Days — Game Show</title>
+<style>
+  :root{
+    --gold:#D4A24C; --gold-bright:#FFD24A; --blue:#060CE9;
+    --bg0:#05060f; --ink:#fff;
+    --cond:"Arial Narrow","Helvetica Neue Condensed","Roboto Condensed",Helvetica,Arial,sans-serif;
+    --body:"Helvetica Neue",Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;min-height:100%;}
+  body{
+    font-family:var(--body); color:var(--ink); -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(900px 480px at 50% -8%, rgba(212,162,76,.20), transparent 62%),
+      radial-gradient(1200px 800px at 50% 28%, #0a1140 0%, var(--bg0) 72%);
+    min-height:100vh; display:flex; flex-direction:column; align-items:center;
+    padding:6vh 20px 40px; text-align:center;
+  }
+
+  /* marquee bulbs — the signature element */
+  .marquee{display:flex;gap:14px;justify-content:center;margin-bottom:20px;flex-wrap:wrap;max-width:520px;}
+  .bulb{
+    width:13px;height:13px;border-radius:50%;background:var(--gold);
+    box-shadow:0 0 10px var(--gold), 0 0 22px rgba(212,162,76,.55);
+    animation:chase 1.4s ease-in-out infinite;
+  }
+  @keyframes chase{0%,100%{opacity:.22;transform:scale(.78);}50%{opacity:1;transform:scale(1);}}
+
+  .eyebrow{font-family:var(--cond);text-transform:uppercase;letter-spacing:.3em;
+    color:#aebcff;font-size:clamp(11px,1.6vw,15px);margin:0 0 8px;}
+  h1{font-family:var(--cond);text-transform:uppercase;font-weight:700;letter-spacing:.03em;
+    font-size:clamp(46px,11vw,128px);line-height:.9;margin:0;color:var(--gold);
+    text-shadow:0 3px 0 rgba(0,0,0,.5), 0 0 44px rgba(212,162,76,.35);}
+  .tagline{font-family:var(--cond);text-transform:uppercase;letter-spacing:.14em;
+    color:#cdd6ff;font-size:clamp(13px,2vw,20px);margin:16px 0 0;}
+
+  .games{display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    width:100%;max-width:920px;margin-top:7vh;}
+  .game{display:flex;flex-direction:column;align-items:center;text-decoration:none;color:var(--ink);
+    background:linear-gradient(180deg,rgba(10,27,110,.72),rgba(6,12,233,.22));
+    border:1px solid rgba(120,140,255,.3);border-radius:16px;padding:28px 22px;
+    position:relative;overflow:hidden;transition:transform .15s,border-color .15s,box-shadow .15s;}
+  .game.live:hover{transform:translateY(-4px);border-color:var(--gold);
+    box-shadow:0 14px 32px rgba(0,0,0,.45), inset 0 0 0 1px var(--gold);}
+  .game .ico{font-size:46px;line-height:1;margin-bottom:12px;}
+  .game h2{font-family:var(--cond);text-transform:uppercase;letter-spacing:.03em;
+    font-size:26px;margin:0 0 8px;color:var(--gold-bright);}
+  .game p{font-size:13.5px;line-height:1.55;color:#c2cbf5;margin:0 0 20px;min-height:4.2em;}
+  .cta{font-family:var(--cond);text-transform:uppercase;letter-spacing:.08em;font-weight:700;
+    background:var(--gold);color:#1a1300;border-radius:8px;padding:10px 24px;font-size:15px;}
+  .game.soon{opacity:.55;}
+  .badge{position:absolute;top:12px;right:12px;font-family:var(--cond);text-transform:uppercase;
+    letter-spacing:.1em;font-size:11px;background:rgba(0,0,0,.4);border:1px solid rgba(255,255,255,.25);
+    color:#cdd6ff;border-radius:999px;padding:4px 11px;}
+
+  footer{margin-top:auto;padding-top:52px;color:#6b74a8;font-size:12px;letter-spacing:.06em;}
+
+  @media (prefers-reduced-motion:reduce){.bulb{animation:none;opacity:1;}.game{transition:none;}}
+</style>
 </head>
 <body>
+  <div class="marquee" id="marquee"></div>
+  <p class="eyebrow" id="eyebrow"></p>
+  <h1 id="title"></h1>
+  <p class="tagline" id="tagline"></p>
+  <div class="games" id="games"></div>
+  <footer id="footer"></footer>
 
-<!-- ===================== SETUP ===================== -->
-<div id="setup">
-  <div class="setup-wrap">
-    <div class="brand">
-      <p>POP IN OFF · TUCSON</p>
-      <h1>Jeopardy Board</h1>
-    </div>
+<script>
+/* ---- Edit these two blocks to change the site or add games ---- */
+const SITE = {
+  eyebrow: "The Cult of Brighter Days presents",
+  title:   "Game Show",
+  tagline: "Failure is mandatory. Buzzing in is encouraged.",
+  footer:  "Running live at Pop In Off, Tucson.",
+};
 
-    <div class="card">
-      <div class="field">
-        <label for="titleInput">Game title (shown on the board)</label>
-        <input type="text" id="titleInput" value="Pop In Off — Game Night">
-      </div>
-      <label class="toggle"><input type="checkbox" id="ddToggle" checked> Arm one random Daily Double each game</label>
-    </div>
+const GAMES = [
+  {
+    name: "Jeopardy", ico: "🎲", live: true, url: "jeopardy/",
+    tag:  "Answer in the form of a question. Six categories, a board that zooms, and a Daily Double hiding somewhere."
+  },
+  {
+    name: "Next Up", ico: "🎪", live: false, url: null,
+    tag:  "Another game is in the workshop. Drop a folder in the repo, add a card here, and it goes live."
+  },
+];
+/* -------------------------------------------------------------- */
 
-    <div class="card">
-      <h2>Load your questions</h2>
-      <p class="hint">
-        Build a spreadsheet with the columns <b>Category</b>, <b>Value</b>, <b>Clue</b>, <b>Answer</b> — one row per clue.
-        <b>Clue</b> is what shows on the board; <b>Answer</b> is the correct response (host-only). <b>Value</b> is optional
-        (left blank, clues auto-fill 200 &rarr; 1000 in row order). Export it as <b>CSV</b> for offline-safe loading, or use <b>.xlsx</b>.
-      </p>
-      <div class="row">
-        <button class="btn" id="csvBtn">Load CSV / XLSX file</button>
-        <button class="btn ghost" id="pasteBtn">Paste CSV instead</button>
-        <button class="btn ghost" id="sampleBtn">Load sample game</button>
-        <button class="btn ghost" id="templateBtn">Download CSV template</button>
-        <input type="file" id="fileInput" accept=".csv,.xlsx,.xls" style="display:none">
-      </div>
-      <div id="pasteWrap" style="display:none;margin-top:12px;">
-        <textarea id="pasteArea" placeholder="Category,Value,Clue,Answer&#10;Science,200,This planet is the Red Planet,What is Mars?"></textarea>
-        <div class="row" style="margin-top:8px;">
-          <button class="btn" id="pasteLoadBtn">Load pasted data</button>
-        </div>
-      </div>
-      <div id="preview"></div>
-    </div>
+document.getElementById("eyebrow").textContent = SITE.eyebrow;
+document.getElementById("title").textContent   = SITE.title;
+document.getElementById("tagline").textContent = SITE.tagline;
+document.getElementById("footer").textContent  = SITE.footer;
 
-    <div class="start-row">
-      <button class="btn gold big" id="startBtn" disabled>Start game</button>
-    </div>
-  </div>
-</div>
+const mq = document.getElementById("marquee");
+for(let i=0;i<11;i++){
+  const b=document.createElement("span"); b.className="bulb";
+  b.style.animationDelay=(i*0.12)+"s"; mq.appendChild(b);
+}
 
-<!-- ===================== GAME ===================== -->
-<div id="game">
-  <div id="topbar">
-    <div id="gameTitle">Pop In Off</div>
-    <div class="tools">
-      <button class="toolbtn" id="soundBtn" title="Mute / unmute sound">&#128266; Sound</button>
-      <button class="toolbtn" id="resetBtn" title="Clear all answered tiles and re-arm Daily Double">&#8635; Reset board</button>
-      <button class="toolbtn" id="backBtn" title="Return to setup">&#9881; Setup</button>
-    </div>
-  </div>
-  <div id="board"></div>
-</div>
-
-<!-- ===================== CLUE ZOOM ===================== -->
-<div id="clueLayer">
-  <div id="clueBackdrop"></div>
-  <div id="clueCard">
-    <div id="clueValue"></div>
-    <div id="clueCat"></div>
-    <div id="clueText"></div>
-    <div id="clueAnswer"></div>
-    <div id="clueControls">
-      <button class="btn" id="thinkBtn">&#9654; Think music</button>
-      <button class="btn" id="timesUpBtn">&#9201; Time's up</button>
-      <button class="btn" id="revealBtn">Reveal answer</button>
-      <button class="btn gold" id="doneBtn">Mark answered &amp; return</button>
-    </div>
-    <button id="clueClose" title="Close without marking answered (Esc)">&times;</button>
-    <div id="ddSplash">
-      <div class="dd-word">Daily<br>Double</div>
-      <div class="dd-sub" id="ddSub">Worth $400</div>
-      <button class="btn gold" id="ddRevealBtn" style="font-size:clamp(16px,2.6vh,24px);padding:14px 30px;">Reveal clue</button>
-    </div>
-  </div>
-</div>
-
-<script src="app.js"></script>
+const wrap = document.getElementById("games");
+GAMES.forEach(g=>{
+  const card = document.createElement(g.live ? "a" : "div");
+  card.className = "game " + (g.live ? "live" : "soon");
+  if(g.live) card.href = g.url;
+  card.innerHTML =
+    (g.live ? "" : '<span class="badge">Soon</span>') +
+    '<span class="ico">'+g.ico+'</span>' +
+    '<h2>'+g.name+'</h2>' +
+    '<p>'+g.tag+'</p>' +
+    (g.live ? '<span class="cta">Play</span>' : '');
+  wrap.appendChild(card);
+});
+</script>
 </body>
 </html>
