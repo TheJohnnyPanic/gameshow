@@ -1,13 +1,17 @@
-# Audio binaries are downloaded locally per jeopardy/sounds/README.md.
-# Keeping them out of the repo keeps it lean and avoids stock-audio
-# redistribution terms (e.g. Mixkit) on a public GitHub repo.
+# Audio files — drop these in locally, don't commit binaries
 jeopardy/sounds/*.mp3
 jeopardy/sounds/*.wav
 jeopardy/sounds/*.ogg
-jeopardy/sounds/*.m4a
 
-# OS / editor cruft
-.DS_Store
-Thumbs.db
-*.swp
+# Game CSV/XLSX files — managed on the server, not in git
+# (commit them if you want version control on your trivia sets)
+# jeopardy/games/*.csv
+# jeopardy/games/*.xlsx
+
+# Node
+node_modules/
+npm-debug.log
+
+# Editor
 .vscode/
+.DS_Store

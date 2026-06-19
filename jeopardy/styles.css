@@ -166,3 +166,23 @@ textarea{
   #clueCard{transition:none !important;}
   #ddSplash .dd-word{animation:none;}
 }
+
+/* ===== GAME LIBRARY ===== */
+#libraryList{display:flex;flex-direction:column;gap:6px;margin-top:8px;}
+.lib-item{
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+  border-radius:8px;padding:10px 14px;gap:12px;cursor:pointer;
+  transition:background .15s, border-color .15s;
+}
+.lib-item:hover{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);}
+.lib-item.active{background:rgba(255,210,74,.12);border-color:var(--gold);}
+.lib-item-name{font-weight:600;font-size:15px;flex:1;text-align:left;}
+.lib-item-load{
+  font-size:13px;padding:5px 12px;border:1px solid rgba(255,255,255,.3);
+  background:transparent;color:#fff;border-radius:6px;cursor:pointer;white-space:nowrap;
+}
+.lib-item:hover .lib-item-load, .lib-item.active .lib-item-load{border-color:var(--gold);color:var(--gold);}
+#libraryUploadStatus{font-size:13px;padding:8px 12px;border-radius:6px;}
+#libraryUploadStatus.ok{background:rgba(0,200,100,.15);border:1px solid rgba(0,200,100,.4);color:#5eead4;}
+#libraryUploadStatus.err{background:rgba(220,50,50,.15);border:1px solid rgba(220,50,50,.4);color:#fca5a5;}

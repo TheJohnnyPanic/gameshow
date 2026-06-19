@@ -1,17 +1,16 @@
-# Add this block to /etc/caddy/Caddyfile (Caddy runs as systemd on the VPS).
-# Caddy will automatically obtain a Let's Encrypt certificate once
-# gameshow.thecultofbrighterdays.org resolves to this server and ports 80/443
-# are reachable (they already are — other sites are served the same way).
-#
-# The handle for /jeopardy/games/* turns on `browse`, which lets that folder
-# return a JSON directory listing (Accept: application/json). The Jeopardy
-# setup screen uses that to show the "Game library" picker.
-
 gameshow.thecultofbrighterdays.org {
     root * /srv/gameshow
     encode gzip zstd
 
-    # Game library: list CSV/XLSX files in the Jeopardy games folder
+    # Node server handles uploads and git webhook
+    handle /upload {
+        reverse_proxy 127.0.0.1:3456
+    }
+    handle /webhook {
+        reverse_proxy 127.0.0.1:3456
+    }
+
+    # Caddy browse JSON for the game library
     handle /jeopardy/games/* {
         file_server {
             browse
@@ -19,14 +18,10 @@ gameshow.thecultofbrighterdays.org {
         }
     }
 
-    # Everything else: normal static serving, repo/meta files kept private
+    # Everything else: static files
     handle {
         file_server {
             hide .git* Caddyfile.example *.md
         }
     }
 }
-
-# After editing the Caddyfile:
-#   sudo caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
-#   sudo systemctl reload caddy

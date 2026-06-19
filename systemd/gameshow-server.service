@@ -1,0 +1,18 @@
+[Unit]
+Description=Gameshow upload + webhook server
+After=network.target
+
+[Service]
+Type=simple
+User=johnnypanic
+WorkingDirectory=/srv/gameshow
+ExecStart=/usr/bin/node /srv/gameshow/server.js
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+# Optional: set a webhook secret for GitHub push validation
+# Environment=WEBHOOK_SECRET=your_secret_here
+
+[Install]
+WantedBy=multi-user.target

@@ -213,84 +213,6 @@ $("templateBtn").onclick = ()=>{
 $("sampleBtn").onclick = ()=> tryLoad(()=> loadCategories(buildBoard(parseCSV(SAMPLE_CSV))));
 
 /* =========================================================================
-   SERVER GAME LIBRARY
-   Lists CSV/XLSX files that Caddy serves from games/ (needs `browse` enabled
-   on /jeopardy/games/* so the folder returns a JSON listing). Falls back
-   silently to "no library" when opened locally or before it's set up.
-   ========================================================================= */
-const GAMES_DIR = "games/";   // relative to this page -> /jeopardy/games/
-
-function prettyName(filename){
-  return filename.replace(/\.(csv|xlsx|xls)$/i,"").replace(/[_-]+/g," ").trim();
-}
-
-async function loadServerLibrary(){
-  const box = $("serverGames");
-  box.innerHTML = '<span class="lib-status">Checking server library&hellip;</span>';
-  let entries;
-  try{
-    const res = await fetch(GAMES_DIR, {headers:{Accept:"application/json"}, cache:"no-store"});
-    if(!res.ok) throw new Error("HTTP "+res.status);
-    entries = await res.json();
-  }catch(e){
-    box.innerHTML = '<span class="lib-status">No server library here &mdash; you&rsquo;re running locally, or the games '+
-                    'folder isn&rsquo;t set up yet. Use &ldquo;Or load a new game&rdquo; below.</span>';
-    return;
-  }
-  const files = (Array.isArray(entries)?entries:[])
-    .map(e=>({
-      name:(e.name ?? e.Name ?? ""),
-      url:(e.url ?? e.URL ?? ""),
-      isDir:(e.is_dir ?? e.IsDir ?? false),
-      size:(e.size ?? e.Size ?? 0),
-    }))
-    .filter(f=> f.name && !f.isDir && /\.(csv|xlsx|xls)$/i.test(f.name))
-    .sort((a,b)=> a.name.localeCompare(b.name));
-
-  if(!files.length){
-    box.innerHTML = '<span class="lib-status">Library folder is set up but empty. Drop <code>.csv</code> or '+
-                    '<code>.xlsx</code> files into the server&rsquo;s <code>jeopardy/games/</code> folder, then Refresh.</span>';
-    return;
-  }
-  box.innerHTML = "";
-  files.forEach(f=>{
-    const btn = document.createElement("button");
-    btn.className = "lib-item";
-    const ext = f.name.split(".").pop().toUpperCase();
-    const kb = f.size ? " &middot; " + Math.max(1, Math.round(f.size/1024)) + " KB" : "";
-    btn.innerHTML = '<span class="lib-name">'+escapeHTML(prettyName(f.name))+'</span>'+
-                    '<span class="lib-meta">'+escapeHTML(ext)+kb+'</span>';
-    btn.onclick = ()=> loadServerGame(f);
-    box.appendChild(btn);
-  });
-}
-
-async function loadServerGame(f){
-  const u = (f.url || encodeURIComponent(f.name)).replace(/^\.?\//,"");
-  const url = GAMES_DIR + u;
-  try{
-    if(/\.(xlsx|xls)$/i.test(f.name)){
-      if(typeof XLSX==="undefined"){ showLoadError("That game is an .xlsx and the spreadsheet reader didn't load. Convert it to CSV, or check your connection."); return; }
-      const buf = await (await fetch(url,{cache:"no-store"})).arrayBuffer();
-      const wb = XLSX.read(buf,{type:"array"});
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const arr = XLSX.utils.sheet_to_json(ws,{header:1,blankrows:false,defval:""});
-      loadCategories(buildBoard(arr));
-    }else{
-      const text = await (await fetch(url,{cache:"no-store"})).text();
-      loadCategories(buildBoard(parseCSV(text)));
-    }
-    $("titleInput").value = prettyName(f.name);   // name the game after the file (still editable)
-    $("preview").scrollIntoView({behavior:"smooth", block:"nearest"});
-  }catch(err){
-    showLoadError('Couldn\'t load "'+f.name+'": '+(err.message||err));
-  }
-}
-
-$("refreshLibBtn").onclick = loadServerLibrary;
-loadServerLibrary();
-
-/* =========================================================================
    START / RENDER BOARD
    ========================================================================= */
 $("startBtn").onclick = ()=>{
@@ -500,3 +422,144 @@ POP CULTURE,1000,"This 2023 biopic paired with ""Barbie"" to create ""Barbenheim
 
 /* Pre-load the sample so the board works the instant you open the file. */
 tryLoad(()=> loadCategories(buildBoard(parseCSV(SAMPLE_CSV))));
+
+/* =========================================================================
+   GAME LIBRARY  — server-side CSV store at /jeopardy/games/
+   Fetches the Caddy browse JSON listing, renders clickable items,
+   and handles browser-side upload to POST /upload on the Node server.
+
+   Falls back gracefully when not served from the VPS (local file open).
+   ========================================================================= */
+const LIBRARY_URL  = "/jeopardy/games/";
+const UPLOAD_URL   = "/upload";
+
+const libraryCard   = $("libraryCard");
+const libraryHint   = $("libraryHint");
+const libraryList   = $("libraryList");
+const libUploadBtn  = $("libraryUploadBtn");
+const libUploadInput= $("libraryFileInput");
+const libUploadStatus = $("libraryUploadStatus");
+
+let libraryActive = null; // currently selected filename
+
+/* ---- fetch & render ---- */
+async function fetchLibrary(){
+  libraryHint.textContent = "Loading…";
+  libraryList.innerHTML = "";
+  try{
+    const res = await fetch(LIBRARY_URL, {headers:{Accept:"application/json"}});
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+
+    // Caddy browse JSON: { files: [{name, is_dir, size, modified}] }
+    // Filter to CSV/XLSX only, exclude directories and README
+    const files = (data.files || [])
+      .filter(f => !f.is_dir && /\.(csv|xlsx|xls)$/i.test(f.name));
+
+    if(!files.length){
+      libraryHint.textContent = "No game files on server yet. Upload one below.";
+      return;
+    }
+    libraryHint.textContent = `${files.length} game${files.length!==1?"s":""} available — click one to load it.`;
+    files.forEach(f => renderLibraryItem(f.name));
+
+  }catch(e){
+    libraryHint.textContent = "Game library not available (running locally or server offline). Use the Load options below.";
+    libraryCard.style.opacity = "0.6";
+  }
+}
+
+function renderLibraryItem(filename){
+  const displayName = filename.replace(/\.(csv|xlsx|xls)$/i,"");
+  const item = document.createElement("div");
+  item.className = "lib-item" + (filename===libraryActive?" active":"");
+  item.dataset.filename = filename;
+
+  const nameEl = document.createElement("span");
+  nameEl.className = "lib-item-name";
+  nameEl.textContent = displayName;
+
+  const loadEl = document.createElement("button");
+  loadEl.className = "lib-item-load";
+  loadEl.textContent = filename===libraryActive ? "✓ Loaded" : "Load";
+
+  item.appendChild(nameEl);
+  item.appendChild(loadEl);
+  item.onclick = () => loadLibraryFile(filename, item);
+  libraryList.appendChild(item);
+}
+
+async function loadLibraryFile(filename, itemEl){
+  try{
+    const res = await fetch(LIBRARY_URL + encodeURIComponent(filename));
+    if(!res.ok) throw new Error("HTTP " + res.status);
+    const text = await res.text();
+
+    const lower = filename.toLowerCase();
+    if(lower.endsWith(".xlsx") || lower.endsWith(".xls")){
+      if(typeof XLSX==="undefined"){ showLoadError("The .xlsx reader didn't load (likely offline). Re-save as CSV."); return; }
+      const buf = await (await fetch(LIBRARY_URL + encodeURIComponent(filename))).arrayBuffer();
+      const wb  = XLSX.read(buf, {type:"array"});
+      const ws  = wb.Sheets[wb.SheetNames[0]];
+      const arr = XLSX.utils.sheet_to_json(ws,{header:1,blankrows:false,defval:""});
+      tryLoad(()=> loadCategories(buildBoard(arr)));
+    }else{
+      tryLoad(()=> loadCategories(buildBoard(parseCSV(text))));
+    }
+
+    // Update title from filename
+    const titleGuess = filename.replace(/\.(csv|xlsx|xls)$/i,"");
+    $("titleInput").value = titleGuess;
+
+    // Mark active
+    libraryActive = filename;
+    document.querySelectorAll(".lib-item").forEach(el=>{
+      el.classList.toggle("active", el.dataset.filename===filename);
+      el.querySelector(".lib-item-load").textContent =
+        el.dataset.filename===filename ? "✓ Loaded" : "Load";
+    });
+
+  }catch(e){
+    showLoadError("Could not load \""+filename+"\" from server: "+e.message);
+  }
+}
+
+/* ---- refresh button ---- */
+$("libraryRefreshBtn").onclick = () => fetchLibrary();
+
+/* ---- upload ---- */
+libUploadBtn.onclick = () => libUploadInput.click();
+
+libUploadInput.onchange = async (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  e.target.value = "";
+
+  showUploadStatus("Uploading "+file.name+"…", "");
+
+  const fd = new FormData();
+  fd.append("file", file);
+
+  try{
+    const res  = await fetch(UPLOAD_URL, {method:"POST", body:fd});
+    const data = await res.json();
+    if(data.ok){
+      showUploadStatus("✓ \""+data.filename+"\" uploaded to library.", "ok");
+      await fetchLibrary();            // refresh the list
+    }else{
+      showUploadStatus("Upload failed: "+(data.error||"unknown error"), "err");
+    }
+  }catch(err){
+    showUploadStatus("Upload error: "+err.message, "err");
+  }
+};
+
+function showUploadStatus(msg, cls){
+  libUploadStatus.textContent = msg;
+  libUploadStatus.className   = cls;
+  libUploadStatus.style.display = "block";
+  if(cls==="ok") setTimeout(()=>{ libUploadStatus.style.display="none"; }, 4000);
+}
+
+/* ---- auto-fetch on load ---- */
+fetchLibrary();
