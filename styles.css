@@ -79,6 +79,8 @@ textarea{
 #topbar .tools{display:flex;gap:8px;}
 .toolbtn{background:#0A1B6E;border:1px solid rgba(255,255,255,.18);color:#cdd6ff;border-radius:7px;padding:7px 12px;font-size:13px;}
 .toolbtn:hover{filter:brightness(1.2);}
+.toolbtn.off{opacity:.5;}
+.btn.on{background:var(--gold-bright);color:#1a1300;border-color:rgba(0,0,0,.2);}
 
 #board{
   flex:1;display:grid;gap:6px;padding:6px;background:var(--backplate);min-height:0;

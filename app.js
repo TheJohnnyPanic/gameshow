@@ -20,6 +20,52 @@ const setupEl=$("setup"), gameEl=$("game"), boardEl=$("board");
 const clueLayer=$("clueLayer"), clueBackdrop=$("clueBackdrop"), clueCard=$("clueCard");
 const clueValueEl=$("clueValue"), clueCatEl=$("clueCat"), clueTextEl=$("clueText"), clueAnswerEl=$("clueAnswer");
 const ddSplash=$("ddSplash"), ddSub=$("ddSub");
+const soundBtn=$("soundBtn"), thinkBtn=$("thinkBtn"), timesUpBtn=$("timesUpBtn");
+
+/* =========================================================================
+   SOUND  (optional — files live in sounds/, see sounds/README.md)
+   Missing files just no-op, so the board works with or without audio.
+   ========================================================================= */
+const Sound = (()=>{
+  // Single source of truth for file paths. To use .wav instead of .mp3,
+  // change the extensions here and nowhere else.
+  const FILES = {
+    select:      "sounds/select.mp3",        // soft blip when a clue opens
+    dailyDouble: "sounds/daily-double.mp3",  // sting when the Daily Double appears
+    reveal:      "sounds/correct.mp3",        // ding when the answer is revealed
+    timesUp:     "sounds/times-up.mp3",       // buzzer when time runs out
+    theme:       "sounds/think-music.mp3",    // looping "think" music
+  };
+  const store = (()=>{ try{ return window.localStorage; }catch(e){ return null; } })();
+  let muted = store ? store.getItem("pio_muted")==="1" : false;
+  const cache = {};
+  function get(key){
+    if(cache[key]) return cache[key];
+    const a = new Audio(FILES[key]);
+    a.preload = "auto";
+    a.addEventListener("error", ()=>{}, {once:true}); // missing file -> silent
+    cache[key] = a; return a;
+  }
+  function play(key){
+    if(muted) return;
+    try{ const a=get(key); a.loop=false; a.currentTime=0; const p=a.play(); if(p&&p.catch) p.catch(()=>{}); }catch(e){}
+  }
+  function theme(on){
+    const a=get("theme"); a.loop=true;
+    if(on && !muted){ try{ a.currentTime=0; const p=a.play(); if(p&&p.catch) p.catch(()=>{}); }catch(e){} }
+    else{ try{ a.pause(); }catch(e){} }
+  }
+  function stopAll(){ Object.values(cache).forEach(a=>{ try{ a.pause(); a.currentTime=0; }catch(e){} }); }
+  function setMuted(m){ muted=m; if(store){ try{ store.setItem("pio_muted", m?"1":"0"); }catch(e){} } if(m) stopAll(); }
+  function isMuted(){ return muted; }
+  return {play, theme, stopAll, setMuted, isMuted};
+})();
+
+function resetThinkBtn(){ thinkBtn.classList.remove("on"); thinkBtn.innerHTML="&#9654; Think music"; }
+function updateSoundBtn(){
+  soundBtn.classList.toggle("off", Sound.isMuted());
+  soundBtn.innerHTML = Sound.isMuted() ? "&#128263; Muted" : "&#128266; Sound";
+}
 
 /* =========================================================================
    CSV PARSING  (RFC-4180-ish state machine: handles quotes, commas, newlines)
@@ -250,6 +296,8 @@ function openClue(ci,ri,cell){
     ddSplash.style.display="none";
   }
 
+  resetThinkBtn();
+  Sound.play(isDD ? "dailyDouble" : "select");
   flipOpen(cell);
 }
 
@@ -270,6 +318,7 @@ function flipOpen(fromEl){
 
 function flipClose(){
   if(!current) return;
+  Sound.theme(false); resetThinkBtn();
   const r=current.el.getBoundingClientRect();
   const vw=window.innerWidth, vh=window.innerHeight;
   clueBackdrop.style.opacity="0";
@@ -288,6 +337,7 @@ $("ddRevealBtn").onclick = ()=>{ ddSplash.style.display="none"; };
 $("revealBtn").onclick = ()=>{
   const shown = clueAnswerEl.style.display!=="none";
   clueAnswerEl.style.display = shown ? "none":"block";
+  if(!shown) Sound.play("reveal");
   $("revealBtn").textContent = shown ? "Reveal answer" : "Hide answer";
 };
 
@@ -322,6 +372,17 @@ $("backBtn").onclick = ()=>{
   gameEl.style.display="none";
   setupEl.style.display="block";
 };
+
+/* ---------- SOUND CONTROLS ---------- */
+thinkBtn.onclick = ()=>{
+  const on = !thinkBtn.classList.contains("on");
+  thinkBtn.classList.toggle("on", on);
+  thinkBtn.innerHTML = on ? "&#9209; Stop music" : "&#9654; Think music";
+  Sound.theme(on);
+};
+timesUpBtn.onclick = ()=>{ Sound.theme(false); resetThinkBtn(); Sound.play("timesUp"); };
+soundBtn.onclick = ()=>{ Sound.setMuted(!Sound.isMuted()); if(Sound.isMuted()) resetThinkBtn(); updateSoundBtn(); };
+updateSoundBtn();
 
 /* =========================================================================
    SAMPLE GAME  (also doubles as the downloadable CSV template / format example)

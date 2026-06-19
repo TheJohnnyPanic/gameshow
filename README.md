@@ -56,7 +56,7 @@ popinoff-jeopardy/
 ├── index.html      # markup
 ├── styles.css      # all styling (Jeopardy blue/gold theme)
 ├── app.js          # board logic, CSV/XLSX import, zoom, Daily Double
-├── sounds/         # (audio added in a later version)
+├── sounds/         # drop optional audio here — see sounds/README.md
 ├── README.md
 └── .gitignore
 ```
@@ -71,6 +71,19 @@ popinoff-jeopardy/
 | × / `Esc` | Close without marking (misclick escape) |
 | ↺ Reset board | Clear tiles + re-roll a fresh Daily Double |
 | ⚙ Setup | Back to the load screen |
+| ▶ Think music | Loop the think music while someone's stumped (toggle) |
+| ⏱ Time's up | Stop the music and hit the buzzer |
+| 🔊 Sound | Mute / unmute all audio (remembered between sessions) |
+
+## Sound
+
+Audio is **optional** and lives in `sounds/`. Drop in up to five files (think music, a
+Daily Double sting, a select blip, a correct ding, and a time's-up buzzer) and they wire up
+automatically; anything missing just stays silent. See **[`sounds/README.md`](sounds/README.md)**
+for the exact filenames, free/commercial-use sources (Pixabay, Mixkit), and licensing notes.
+
+The real *Jeopardy!* theme is copyrighted — use the royalty-free *think*-style tracks the
+sounds README points to instead.
 
 ## License
 
