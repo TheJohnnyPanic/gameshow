@@ -186,3 +186,10 @@ textarea{
 #libraryUploadStatus{font-size:13px;padding:8px 12px;border-radius:6px;}
 #libraryUploadStatus.ok{background:rgba(0,200,100,.15);border:1px solid rgba(0,200,100,.4);color:#5eead4;}
 #libraryUploadStatus.err{background:rgba(220,50,50,.15);border:1px solid rgba(220,50,50,.4);color:#fca5a5;}
+
+.lib-item-delete{
+  font-size:13px;padding:5px 10px;border:1px solid rgba(220,50,50,.4);
+  background:transparent;color:rgba(220,100,100,.8);border-radius:6px;
+  cursor:pointer;white-space:nowrap;flex-shrink:0;
+}
+.lib-item-delete:hover{background:rgba(220,50,50,.2);border-color:rgba(220,50,50,.8);color:#fca5a5;}

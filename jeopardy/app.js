@@ -484,8 +484,32 @@ function renderLibraryItem(filename){
   loadEl.className = "lib-item-load";
   loadEl.textContent = filename===libraryActive ? "✓ Loaded" : "Load";
 
+  const delEl = document.createElement("button");
+  delEl.className = "lib-item-delete";
+  delEl.title = "Remove from library";
+  delEl.textContent = "✕";
+  delEl.onclick = async (e) => {
+    e.stopPropagation();
+    if(!confirm("Remove \""+displayName+"\" from the library?")) return;
+    try{
+      const res  = await fetch(UPLOAD_URL+"/"+encodeURIComponent(filename), {method:"DELETE"});
+      const data = await res.json();
+      if(data.ok){
+        item.remove();
+        if(filename===libraryActive) libraryActive=null;
+        const remaining = libraryList.querySelectorAll(".lib-item").length;
+        if(!remaining) libraryHint.textContent = "No game files on server yet. Upload one below.";
+      }else{
+        alert("Delete failed: "+(data.error||"unknown"));
+      }
+    }catch(err){
+      alert("Delete error: "+err.message);
+    }
+  };
+
   item.appendChild(nameEl);
   item.appendChild(loadEl);
+  item.appendChild(delEl);
   item.onclick = () => loadLibraryFile(filename, item);
   libraryList.appendChild(item);
 }

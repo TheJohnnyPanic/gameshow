@@ -84,6 +84,28 @@ app.post("/upload", (req, res) => {
 });
 
 /* ------------------------------------------------------------------
+   DELETE /upload/:filename
+   Removes a CSV/XLSX file from jeopardy/games/
+   ------------------------------------------------------------------ */
+app.delete("/upload/:filename", (req, res) => {
+  const filename = path.basename(req.params.filename); // prevent path traversal
+  const filepath = path.join(GAMES_DIR, filename);
+
+  if (!fs.existsSync(filepath)) {
+    return res.status(404).json({ ok: false, error: "File not found." });
+  }
+
+  try {
+    fs.unlinkSync(filepath);
+    console.log("[delete] removed:", filename);
+    res.json({ ok: true, filename });
+  } catch (err) {
+    console.error("[delete] error:", err.message);
+    res.status(500).json({ ok: false, error: err.message });
+  }
+});
+
+/* ------------------------------------------------------------------
    POST /webhook
    GitHub-compatible push webhook. Runs `git pull` in the repo root.
    Set WEBHOOK_SECRET env var to validate the X-Hub-Signature-256 header.
