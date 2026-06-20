@@ -492,7 +492,7 @@ function renderLibraryItem(filename){
     e.stopPropagation();
     if(!confirm("Remove \""+displayName+"\" from the library?")) return;
     try{
-      const res  = await fetch(UPLOAD_URL+"/"+encodeURIComponent(filename), {method:"DELETE"});
+      const res = await fetch(UPLOAD_URL, {method: "DELETE", headers: {"Content-Type": "application/json"}, body: JSON.stringify({filename})});
       const data = await res.json();
       if(data.ok){
         item.remove();

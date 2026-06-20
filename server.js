@@ -87,14 +87,14 @@ app.post("/upload", (req, res) => {
    DELETE /upload/:filename
    Removes a CSV/XLSX file from jeopardy/games/
    ------------------------------------------------------------------ */
-app.delete("/upload/:filename", (req, res) => {
-  const filename = path.basename(req.params.filename); // prevent path traversal
-  const filepath = path.join(GAMES_DIR, filename);
+app.delete("/upload", express.json(), (req, res) => {
+  const filename = path.basename(req.body.filename || "");
+  if (!filename) return res.status(400).json({ ok: false, error: "No filename provided." });
 
+  const filepath = path.join(GAMES_DIR, filename);
   if (!fs.existsSync(filepath)) {
     return res.status(404).json({ ok: false, error: "File not found." });
   }
-
   try {
     fs.unlinkSync(filepath);
     console.log("[delete] removed:", filename);
